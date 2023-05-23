@@ -1,5 +1,7 @@
 import argparse, os, requests, random
 
+_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
+
 def safe_file_name(name):
     # replace any non-ascii characters with _
     return ''.join([c if ord(c) < 128 else '_' for c in name]).replace(" ","_")
@@ -48,7 +50,8 @@ def download_into(url,path,istext=True):
     # called as download_into("http://example.com/style.css", "./style.css")
     try:
         print("Downloading " + url + " to " + path + "...")
-        response = requests.get(url)
+        # get with ua
+        response = requests.get(url, headers={'User-Agent': _UA})
         if response.status_code == 200:
             if istext:
                 css_text = response.text
@@ -89,19 +92,24 @@ def css_parser(css, base="./", splited=False, prefix=""):
             url = line[9:].split(")")[0]
             print("Found " + url + ".")
             fmt = ".woff"
-            if "format(truetype)" in line or ".ttf" in line:
+            if "format(truetype)" in line or "format('truetype')" in line  or 'format("truetype")' in line or ".ttf" in line:
                 fmt = ".ttf"
-            elif "format(woff2)" in line:
-                fmt = ".woff"
+            elif "format(openfont)" in line or "format('openfont')" in line or 'format("openfont")' in line or ".otf" in line:
+                fmt = ".otf"
+            elif "format(woff2)" in line or "format('woff2')" in line or 'format("woff2")' in line:
+                fmt = ".woff2"
+            elif "format(" in line:
+                fmt = "."+line.split("format(")[1][1:].split(")")[0][:-1]
             print("Format: " + fmt)
             # 6 random letters
             rd = ''.join(random.choice('abcdefghijklmnopqrstuvwxyz') for i in range(6))
-            sname = safe_file_name(name)+'_'+rd+fmt
-            finfo = {"name":name, "file":sname, "url":url, "path": os.path.join(base, sname),"fmt":fmt}
+            sname = safe_file_name(name)+'_'+rd
+            fname = sname+fmt
+            finfo = {"name":name, "file":fname, "url":url, "path": os.path.join(base, fname),"fmt":fmt}
             processed.append(finfo)
             download_into(url, finfo["path"], False)
             print("Downloaded " + finfo["name"] + " to " + finfo["path"] + ".")
-            nurl = os.path.join(prefix,base if base != "./" else "",sname)
+            nurl = os.path.join(prefix,base if base != "./" else "",fname)
             lines.append(oline.replace(url, nurl))
         elif line.startswith("font-family: "):#font-family: 'Roboto';
             name = line[14:-2]
