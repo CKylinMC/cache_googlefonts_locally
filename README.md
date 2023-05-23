@@ -2,6 +2,8 @@
 
 Cache GoogleFonts resources from css or css-url to local file.
 
+It will read from a URL of GoogleFonts Stylesheet or just a css contains fonts src, then download font files and relink them into css.
+
 ```
 usage: CachedGoogleFonts.py [-h] [-o outputpath] [-p prefix] [-u URL] [-f FILEPATH] [-l FILEPATH]
 
